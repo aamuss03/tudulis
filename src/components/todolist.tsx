@@ -1,7 +1,6 @@
-'use client';
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import Swal from 'sweetalert2';
+"use client";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { db } from "../app/lib/firebase";
 import {
   collection,
   addDoc,
@@ -9,8 +8,9 @@ import {
   deleteDoc,
   doc,
   updateDoc,
-} from 'firebase/firestore';
-import { db } from '../app/lib/firebase';
+} from "firebase/firestore";
+import Swal from "sweetalert2";
+import { AnimatePresence, motion } from "framer-motion";
 
 type Task = {
   id: string;
@@ -19,150 +19,269 @@ type Task = {
   deadline: string;
 };
 
+type SortKey = "text" | "deadline" | "remaining";
+type SortOrder = "asc" | "desc";
+
 export default function TodoList() {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [timeRemaining, setTimeRemaining] = useState<{ [key: string]: string }>(
-    {}
-  );
+  const [timeRemaining, setTimeRemaining] = useState<{ [key: string]: string }>({});
+  const [sortKey, setSortKey] = useState<SortKey>("text");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
 
   useEffect(() => {
     const fetchTasks = async () => {
-      const querySnapshot = await getDocs(collection(db, 'tasks'));
-      const tasksData = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Task[];
-      setTasks(tasksData);
+      try {
+        const querySnapshot = await getDocs(collection(db, "tasks"));
+        const tasksData = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as Task[];
+        setTasks(tasksData);
+      } catch (error) {
+        console.error("Error fetching tasks:", error);
+      }
     };
     fetchTasks();
   }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      const newTimeRemaining: { [key: string]: string } = {};
-      tasks.forEach((task) => {
-        newTimeRemaining[task.id] = calculateTimeRemaining(task.deadline);
+      setTimeRemaining((prev) => {
+        const newTimeRemaining: { [key: string]: string } = {};
+        tasks.forEach((task) => {
+          newTimeRemaining[task.id] = calculateTimeRemaining(task.deadline);
+        });
+        return newTimeRemaining;
       });
-      setTimeRemaining(newTimeRemaining);
     }, 1000);
 
     return () => clearInterval(interval);
   }, [tasks]);
 
-  const calculateTimeRemaining = (deadline: string): string => {
+  const calculateTimeRemaining = useCallback((deadline: string): string => {
     const deadlineTime = new Date(deadline).getTime();
-    const now = new Date().getTime();
+    const now = Date.now();
     const difference = deadlineTime - now;
 
-    if (difference <= 0) return 'Waktu habis!';
+    if (difference <= 0) return "Waktu habis!";
 
     const hours = Math.floor(difference / (1000 * 60 * 60));
     const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
     const seconds = Math.floor((difference % (1000 * 60)) / 1000);
 
-    return `${hours}j ${minutes}m ${seconds}d`;
+    return `${hours}h ${minutes}m ${seconds}s`;
+  }, []);
+
+  const sortedTasks = useMemo(() => {
+    return [...tasks].sort((a, b) => {
+      let compareVal = 0;
+      if (sortKey === "text") {
+        compareVal = a.text.localeCompare(b.text);
+      } else if (sortKey === "deadline") {
+        compareVal = new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+      } else if (sortKey === "remaining") {
+        compareVal = (new Date(a.deadline).getTime() - Date.now()) - (new Date(b.deadline).getTime() - Date.now());
+      }
+      return sortOrder === "asc" ? compareVal : -compareVal;
+    });
+  }, [tasks, sortKey, sortOrder]);
+
+  const toggleSort = (key: SortKey) => {
+    setSortKey((prevKey) => (prevKey === key ? key : key));
+    setSortOrder((prevOrder) => (prevOrder === "asc" ? "desc" : "asc"));
   };
 
   const addTask = async (): Promise<void> => {
     const { value: formValues } = await Swal.fire({
-      title: 'Tambahkan tugas baru',
+      title: "Tambahkan tugas baru",
       html:
         '<input id="swal-input1" class="swal2-input" placeholder="Nama tugas">' +
         '<input id="swal-input2" type="datetime-local" class="swal2-input">',
       focusConfirm: false,
       showCancelButton: true,
-      confirmButtonText: 'Tambah',
-      cancelButtonText: 'Batal',
+      confirmButtonText: "Tambah",
+      cancelButtonText: "Batal",
       preConfirm: () => {
         return [
-          (document.getElementById('swal-input1') as HTMLInputElement)?.value,
-          (document.getElementById('swal-input2') as HTMLInputElement)?.value,
+          (document.getElementById("swal-input1") as HTMLInputElement)?.value,
+          (document.getElementById("swal-input2") as HTMLInputElement)?.value,
         ];
       },
     });
 
     if (formValues && formValues[0] && formValues[1]) {
-      const newTask: Omit<Task, 'id'> = {
+      const newTask: Omit<Task, "id"> = {
         text: formValues[0],
         completed: false,
         deadline: formValues[1],
       };
-      const docRef = await addDoc(collection(db, 'tasks'), newTask);
-      setTasks([...tasks, { id: docRef.id, ...newTask }]);
+      try {
+        const docRef = await addDoc(collection(db, "tasks"), newTask);
+        setTasks((prevTasks) => [...prevTasks, { id: docRef.id, ...newTask }]);
+        Swal.fire("Berhasil!", "Tugas ditambahkan.", "success");
+      } catch (error) {
+        console.error("Error adding task:", error);
+      }
     }
   };
 
-  const toggleTask = async (id: string): Promise<void> => {
+  const editTask = async (task: Task) => {
+    const { value: formValues } = await Swal.fire({
+      title: "Edit tugas",
+      html:
+        `<input id="swal-input1" class="swal2-input" value="${task.text}" placeholder="Nama tugas">` +
+        `<input id="swal-input2" type="datetime-local" class="swal2-input" value="${task.deadline}">`,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: "Update",
+      cancelButtonText: "Batal",
+      preConfirm: () => {
+        return [
+          (document.getElementById("swal-input1") as HTMLInputElement)?.value,
+          (document.getElementById("swal-input2") as HTMLInputElement)?.value,
+        ];
+      },
+    });
+
+    if (formValues && formValues[0] && formValues[1]) {
+      const taskRef = doc(db, "tasks", task.id);
+      try {
+        await updateDoc(taskRef, {
+          text: formValues[0],
+          deadline: formValues[1],
+        });
+        setTasks((prevTasks) =>
+          prevTasks.map((t) =>
+            t.id === task.id ? { ...t, text: formValues[0], deadline: formValues[1] } : t
+          )
+        );
+        Swal.fire("Berhasil!", "Tugas berhasil diedit.", "success");
+      } catch (error) {
+        console.error("Error updating task:", error);
+      }
+    }
+  };
+
+  const deleteTask = async (id: string): Promise<void> => {
+    const confirm = await Swal.fire({
+      title: "Yakin ingin menghapus?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Ya, hapus!",
+      cancelButtonText: "Batal",
+    });
+    if (confirm.isConfirmed) {
+      try {
+        await deleteDoc(doc(db, "tasks", id));
+        setTasks((prevTasks) => prevTasks.filter((task) => task.id !== id));
+        Swal.fire("Berhasil!", "Tugas berhasil dihapus.", "success");
+      } catch (error) {
+        console.error("Error deleting task:", error);
+      }
+    }
+  };
+
+  const toggleComplete = async (id: string) => {
     const updatedTasks = tasks.map((task) =>
       task.id === id ? { ...task, completed: !task.completed } : task
     );
     setTasks(updatedTasks);
-    const taskRef = doc(db, 'tasks', id);
+
+    const taskRef = doc(db, "tasks", id);
     await updateDoc(taskRef, {
-      completed: updatedTasks.find((task) => task.id === id)?.completed,
+      completed: !tasks.find((task) => task.id === id)?.completed,
     });
   };
 
-  const deleteTask = async (id: string): Promise<void> => {
-    await deleteDoc(doc(db, 'tasks', id));
-    setTasks(tasks.filter((task) => task.id !== id));
+  const getSortArrow = (key: SortKey) => {
+    if (sortKey !== key) return "";
+    return sortOrder === "asc" ? "▲" : "▼";
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-4 bg-white shadow-md rounded-lg">
-      <h1 className="text-2xl text-emerald-500 font-bold mb-4">To-Do List</h1>
+    <div className="max-w-3xl mx-auto mt-10 p-4 text-white">
+      <h1 className="text-2xl font-bold text-center mb-6">TO DO LIST</h1>
+
       <div className="flex justify-center mb-4">
         <button
           onClick={addTask}
-          className="bg-slate-500 text-white px-4 py-2 rounded"
+          className="bg-indigo-400 hover:bg-indigo-500 text-white px-6 py-2 rounded-xl font-semibold"
         >
-          Tambah Tugas
+          TAMBAH KEGIATAN
         </button>
       </div>
-      <ul>
+
+      <div className="grid grid-cols-5 gap-4 font-semibold text-center text-white mb-2 px-6">
+        <div className="cursor-pointer" onClick={() => toggleSort("text")}>
+          Kegiatan {getSortArrow("text")}
+        </div>
+        <div className="cursor-pointer" onClick={() => toggleSort("deadline")}>
+          Deadline {getSortArrow("deadline")}
+        </div>
+        <div className="cursor-pointer" onClick={() => toggleSort("remaining")}>
+          Sisa Waktu {getSortArrow("remaining")}
+        </div>
+      </div>
+
+      <ul className="space-y-2">
         <AnimatePresence>
-          {tasks.map((task) => {
+          {sortedTasks.map((task) => {
             const timeLeft = calculateTimeRemaining(task.deadline);
-            const isExpired = timeLeft === 'Waktu habis!';
-            const taskColor = task.completed
-              ? 'bg-green-200'
+            const isExpired = timeLeft === "Waktu habis!";
+
+            // ✅ LOGIKA WARNA BARU
+            const rowColor = task.completed
+              ? "bg-green-300"
               : isExpired
-              ? 'bg-red-200'
-              : 'bg-yellow-200';
+              ? "bg-red-300"
+              : "bg-yellow-300";
 
             return (
               <motion.li
                 key={task.id}
-                initial={{ opacity: 0, y: -10 }}
+                initial={{ opacity: 0, y: -5 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.3 }}
-                className={`flex flex-col justify-between p-2 border-b rounded-lg ${taskColor}`}
+                className={`grid grid-cols-5 gap-4 items-center text-center px-6 py-2 rounded-lg ${rowColor}`}
               >
-                <div className="flex justify-between items-center">
+                <div className="flex items-center space-x-2 justify-start">
+                  <input
+                    type="checkbox"
+                    checked={task.completed}
+                    onChange={() => toggleComplete(task.id)}
+                    className="form-checkbox h-4 w-4 text-green-600"
+                  />
                   <span
-                    onClick={() => toggleTask(task.id)}
-                    className={`cursor-pointer transition-500 ${
-                      task.completed
-                        ? 'line-through text-gray-500'
-                        : 'font-semibold text-gray-700'
+                    className={`truncate max-w-[180px] text-left ${
+                      task.completed ? "line-through text-gray-700" : ""
                     }`}
+                    title={task.text}
                   >
                     {task.text}
                   </span>
+                </div>
+                <div>{new Date(task.deadline).toLocaleDateString()}</div>
+                <div className="flex items-center justify-center gap-2">
+                  <span className="text-sm">⏰</span>
+                  <span>{timeLeft}</span>
+                </div>
+                <div className="text-right">
                   <button
-                    onClick={() => deleteTask(task.id)}
-                    className="text-white p-1 rounded bg-red-600 hover:bg-red-800"
+                    onClick={() => editTask(task)}
+                    className="text-black hover:underline mr-2"
                   >
-                    Hapus
+                    📝edit
                   </button>
                 </div>
-                <p className="text-sm text-gray-700">
-                  Deadline: {new Date(task.deadline).toLocaleString()}
-                </p>
-                <p className="text-xs font-semibold text-gray-700">
-                  ⏳ {timeRemaining[task.id] || 'Menghitung...'}
-                </p>
+                <div className="text-left">
+                  <button
+                    onClick={() => deleteTask(task.id)}
+                    className="text-black hover:underline"
+                  >
+                    🗑️hapus
+                  </button>
+                </div>
               </motion.li>
             );
           })}
