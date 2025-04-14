@@ -27,6 +27,15 @@ export default function TodoList() {
   const [sortKey, setSortKey] = useState<SortKey>("text");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
 
+  // Trigger render setiap detik untuk real-time timer
+  const [, setTime] = useState(Date.now());
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTime(Date.now());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     const fetchTasks = async () => {
       try {
@@ -54,7 +63,7 @@ export default function TodoList() {
     const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
     const seconds = Math.floor((difference % (1000 * 60)) / 1000);
 
-    return `${hours}j ${minutes}m ${seconds}d`;
+    return `${hours}h ${minutes}m ${seconds}s`;
   }, []);
 
   const sortedTasks = useMemo(() => {
@@ -63,12 +72,10 @@ export default function TodoList() {
       if (sortKey === "text") {
         compareVal = a.text.localeCompare(b.text);
       } else if (sortKey === "deadline") {
-        compareVal =
-          new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+        compareVal = new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
       } else if (sortKey === "remaining") {
         compareVal =
-          new Date(a.deadline).getTime() -
-          Date.now() -
+          new Date(a.deadline).getTime() - Date.now() -
           (new Date(b.deadline).getTime() - Date.now());
       }
       return sortOrder === "asc" ? compareVal : -compareVal;
@@ -141,9 +148,7 @@ export default function TodoList() {
         });
         setTasks((prevTasks) =>
           prevTasks.map((t) =>
-            t.id === task.id
-              ? { ...t, text: formValues[0], deadline: formValues[1] }
-              : t
+            t.id === task.id ? { ...t, text: formValues[0], deadline: formValues[1] } : t
           )
         );
         Swal.fire("Berhasil!", "Tugas berhasil diedit.", "success");
@@ -220,6 +225,7 @@ export default function TodoList() {
             const timeLeft = calculateTimeRemaining(task.deadline);
             const isExpired = timeLeft === "Waktu habis!";
 
+            // 🌈 Warna baris berdasarkan status
             const rowColor = task.completed
               ? "bg-green-300"
               : isExpired
