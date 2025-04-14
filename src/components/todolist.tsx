@@ -24,7 +24,6 @@ type SortOrder = "asc" | "desc";
 
 export default function TodoList() {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [timeRemaining, setTimeRemaining] = useState<{ [key: string]: string }>({});
   const [sortKey, setSortKey] = useState<SortKey>("text");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
 
@@ -43,20 +42,6 @@ export default function TodoList() {
     };
     fetchTasks();
   }, []);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTimeRemaining((prev) => {
-        const newTimeRemaining: { [key: string]: string } = {};
-        tasks.forEach((task) => {
-          newTimeRemaining[task.id] = calculateTimeRemaining(task.deadline);
-        });
-        return newTimeRemaining;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [tasks]);
 
   const calculateTimeRemaining = useCallback((deadline: string): string => {
     const deadlineTime = new Date(deadline).getTime();
@@ -78,9 +63,13 @@ export default function TodoList() {
       if (sortKey === "text") {
         compareVal = a.text.localeCompare(b.text);
       } else if (sortKey === "deadline") {
-        compareVal = new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+        compareVal =
+          new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
       } else if (sortKey === "remaining") {
-        compareVal = (new Date(a.deadline).getTime() - Date.now()) - (new Date(b.deadline).getTime() - Date.now());
+        compareVal =
+          new Date(a.deadline).getTime() -
+          Date.now() -
+          (new Date(b.deadline).getTime() - Date.now());
       }
       return sortOrder === "asc" ? compareVal : -compareVal;
     });
@@ -152,7 +141,9 @@ export default function TodoList() {
         });
         setTasks((prevTasks) =>
           prevTasks.map((t) =>
-            t.id === task.id ? { ...t, text: formValues[0], deadline: formValues[1] } : t
+            t.id === task.id
+              ? { ...t, text: formValues[0], deadline: formValues[1] }
+              : t
           )
         );
         Swal.fire("Berhasil!", "Tugas berhasil diedit.", "success");
@@ -229,7 +220,6 @@ export default function TodoList() {
             const timeLeft = calculateTimeRemaining(task.deadline);
             const isExpired = timeLeft === "Waktu habis!";
 
-            // ✅ LOGIKA WARNA BARU
             const rowColor = task.completed
               ? "bg-green-300"
               : isExpired
