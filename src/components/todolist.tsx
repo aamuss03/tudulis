@@ -232,7 +232,7 @@ export default function TodoList() {
 
   return (
     <div className="max-w-3xl mx-auto mt-10 p-4 text-gray-900">
-      <h1 className="text-3xl font-semibold text-center mb-8 tracking-wide">📝 To Do List</h1>
+      <h1 className="text-3xl font-semibold text-center text-white mb-8 tracking-wide">📝 To Do List</h1>
   
       <div className="flex justify-center mb-6">
         <button
