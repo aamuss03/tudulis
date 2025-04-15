@@ -24,11 +24,10 @@ type SortOrder = "asc" | "desc";
 
 export default function TodoList() {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [sortKey, setSortKey] = useState<SortKey>("text");
+  const [sortKey, setSortKey] = useState<SortKey>("remaining");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
-
-  // Trigger render setiap detik untuk real-time timer
   const [, setTime] = useState(Date.now());
+
   useEffect(() => {
     const interval = setInterval(() => {
       setTime(Date.now());
@@ -52,19 +51,19 @@ export default function TodoList() {
     fetchTasks();
   }, []);
 
-  const calculateTimeRemaining = useCallback((deadline: string): string => {
+  const calculateTimeRemaining = useCallback((deadline: string): number => {
     const deadlineTime = new Date(deadline).getTime();
     const now = Date.now();
-    const difference = deadlineTime - now;
-
-    if (difference <= 0) return "Waktu habis!";
-
-    const hours = Math.floor(difference / (1000 * 60 * 60));
-    const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((difference % (1000 * 60)) / 1000);
-
-    return `${hours}h ${minutes}m ${seconds}s`;
+    return deadlineTime - now;
   }, []);
+
+  const formatTimeRemaining = (millis: number): string => {
+    if (millis <= 0) return "Waktu habis!";
+    const hours = Math.floor(millis / (1000 * 60 * 60));
+    const minutes = Math.floor((millis % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((millis % (1000 * 60)) / 1000);
+    return `${hours}h ${minutes}m ${seconds}s`;
+  };
 
   const sortedTasks = useMemo(() => {
     return [...tasks].sort((a, b) => {
@@ -72,40 +71,52 @@ export default function TodoList() {
       if (sortKey === "text") {
         compareVal = a.text.localeCompare(b.text);
       } else if (sortKey === "deadline") {
-        compareVal = new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+        compareVal =
+          new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
       } else if (sortKey === "remaining") {
         compareVal =
-          new Date(a.deadline).getTime() - Date.now() -
-          (new Date(b.deadline).getTime() - Date.now());
+          calculateTimeRemaining(a.deadline) -
+          calculateTimeRemaining(b.deadline);
       }
       return sortOrder === "asc" ? compareVal : -compareVal;
     });
-  }, [tasks, sortKey, sortOrder]);
+  }, [tasks, sortKey, sortOrder, calculateTimeRemaining]);
 
   const toggleSort = (key: SortKey) => {
-    setSortKey((prevKey) => (prevKey === key ? key : key));
-    setSortOrder((prevOrder) => (prevOrder === "asc" ? "desc" : "asc"));
+    setSortKey(key);
+    setSortOrder((prevOrder) =>
+      sortKey === key && prevOrder === "asc" ? "desc" : "asc"
+    );
   };
 
   const addTask = async (): Promise<void> => {
     const { value: formValues } = await Swal.fire({
-      title: "Tambahkan tugas baru",
+      title: "Tambahkan Kegiatan baru",
       html:
-        '<input id="swal-input1" class="swal2-input" placeholder="Nama tugas">' +
+        '<input id="swal-input1" class="swal2-input" placeholder="Nama Kegiatan">' +
         '<input id="swal-input2" type="datetime-local" class="swal2-input">',
       focusConfirm: false,
       showCancelButton: true,
       confirmButtonText: "Tambah",
       cancelButtonText: "Batal",
       preConfirm: () => {
-        return [
-          (document.getElementById("swal-input1") as HTMLInputElement)?.value,
-          (document.getElementById("swal-input2") as HTMLInputElement)?.value,
-        ];
+        const text = (
+          document.getElementById("swal-input1") as HTMLInputElement
+        )?.value.trim();
+        const deadline = (
+          document.getElementById("swal-input2") as HTMLInputElement
+        )?.value;
+
+        if (!text || !deadline) {
+          Swal.showValidationMessage("Semua kolom harus diisi!");
+          return;
+        }
+
+        return [text, deadline];
       },
     });
 
-    if (formValues && formValues[0] && formValues[1]) {
+    if (formValues) {
       const newTask: Omit<Task, "id"> = {
         text: formValues[0],
         completed: false,
@@ -114,7 +125,7 @@ export default function TodoList() {
       try {
         const docRef = await addDoc(collection(db, "tasks"), newTask);
         setTasks((prevTasks) => [...prevTasks, { id: docRef.id, ...newTask }]);
-        Swal.fire("Berhasil!", "Tugas ditambahkan.", "success");
+        Swal.fire("Berhasil!", "Kegiatan ditambahkan.", "success");
       } catch (error) {
         console.error("Error adding task:", error);
       }
@@ -123,9 +134,9 @@ export default function TodoList() {
 
   const editTask = async (task: Task) => {
     const { value: formValues } = await Swal.fire({
-      title: "Edit tugas",
+      title: "Edit Kegiatan",
       html:
-        `<input id="swal-input1" class="swal2-input" value="${task.text}" placeholder="Nama tugas">` +
+        `<input id="swal-input1" class="swal2-input" value="${task.text}" placeholder="Nama Kegiatan">` +
         `<input id="swal-input2" type="datetime-local" class="swal2-input" value="${task.deadline}">`,
       focusConfirm: false,
       showCancelButton: true,
@@ -148,10 +159,12 @@ export default function TodoList() {
         });
         setTasks((prevTasks) =>
           prevTasks.map((t) =>
-            t.id === task.id ? { ...t, text: formValues[0], deadline: formValues[1] } : t
+            t.id === task.id
+              ? { ...t, text: formValues[0], deadline: formValues[1] }
+              : t
           )
         );
-        Swal.fire("Berhasil!", "Tugas berhasil diedit.", "success");
+        Swal.fire("Berhasil!", "Kegiatan berhasil diedit.", "success");
       } catch (error) {
         console.error("Error updating task:", error);
       }
@@ -170,7 +183,7 @@ export default function TodoList() {
       try {
         await deleteDoc(doc(db, "tasks", id));
         setTasks((prevTasks) => prevTasks.filter((task) => task.id !== id));
-        Swal.fire("Berhasil!", "Tugas berhasil dihapus.", "success");
+        Swal.fire("Berhasil!", "Kegiatan berhasil dihapus.", "success");
       } catch (error) {
         console.error("Error deleting task:", error);
       }
@@ -222,10 +235,10 @@ export default function TodoList() {
       <ul className="space-y-2">
         <AnimatePresence>
           {sortedTasks.map((task) => {
-            const timeLeft = calculateTimeRemaining(task.deadline);
-            const isExpired = timeLeft === "Waktu habis!";
+            const millisLeft = calculateTimeRemaining(task.deadline);
+            const timeLeftStr = formatTimeRemaining(millisLeft);
+            const isExpired = millisLeft <= 0;
 
-            // 🌈 Warna baris berdasarkan status
             const rowColor = task.completed
               ? "bg-green-300"
               : isExpired
@@ -257,15 +270,15 @@ export default function TodoList() {
                     {task.text}
                   </span>
                 </div>
-                <div>{new Date(task.deadline).toLocaleDateString()}</div>
+                <div>{new Date(task.deadline).toLocaleDateString("id-ID")}</div>
                 <div className="flex items-center justify-center gap-2">
                   <span className="text-sm">⏰</span>
-                  <span>{timeLeft}</span>
+                  <span>{timeLeftStr}</span>
                 </div>
                 <div className="text-right">
                   <button
                     onClick={() => editTask(task)}
-                    className="text-black hover:underline mr-2"
+                    className="cursor-pointer text-black hover:underline mr-2"
                   >
                     📝edit
                   </button>
@@ -273,7 +286,7 @@ export default function TodoList() {
                 <div className="text-left">
                   <button
                     onClick={() => deleteTask(task.id)}
-                    className="text-black hover:underline"
+                    className="cursor-pointer text-red-500 hover:underline"
                   >
                     🗑️hapus
                   </button>
