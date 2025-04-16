@@ -20,7 +20,7 @@ type Task = {
   deadline: string;
 };
 
-type SortOption = "abjad-asc" | "time-asc" ;
+type SortOption = "abjad-asc" | "time-asc";
 
 export default function TodoList() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -68,13 +68,13 @@ export default function TodoList() {
     const sorted = [...tasks];
     if (sortOption === "abjad-asc") {
       sorted.sort((a, b) => a.text.localeCompare(b.text));
-    }  else if (sortOption === "time-asc") {
+    } else if (sortOption === "time-asc") {
       sorted.sort(
         (a, b) =>
           calculateTimeRemaining(a.deadline) -
           calculateTimeRemaining(b.deadline)
       );
-    } 
+    }
     return sorted;
   }, [tasks, sortOption, calculateTimeRemaining]);
 
@@ -257,8 +257,8 @@ export default function TodoList() {
               const rowColor = task.completed
                 ? "bg-green-700/20 border-green-500"
                 : isExpired
-                ? "bg-red-700/20 border-red-500"
-                : "bg-yellow-600/20 border-yellow-500";
+                  ? "bg-red-700/20 border-red-500"
+                  : "bg-yellow-600/20 border-yellow-500";
 
               return (
                 <motion.li
@@ -287,11 +287,10 @@ export default function TodoList() {
                         className="h-5 w-5 mt-1"
                       />
                       <span
-                        className={`break-words ${
-                          task.completed
+                        className={`break-words ${task.completed
                             ? "line-through text-gray-500"
                             : "text-gray-100"
-                        }`}
+                          }`}
                       >
                         {task.text}
                       </span>
@@ -321,11 +320,10 @@ export default function TodoList() {
                       className="h-5 w-5 mt-1"
                     />
                     <span
-                      className={`break-words ${
-                        task.completed
+                      className={`break-words ${task.completed
                           ? "line-through text-gray-500"
                           : "text-gray-100"
-                      }`}
+                        }`}
                     >
                       {task.text}
                     </span>
@@ -335,9 +333,17 @@ export default function TodoList() {
                     {new Date(task.deadline).toLocaleDateString("id-ID")}
                   </div>
 
-                  <div className="hidden sm:block col-span-2 text-center text-sm text-gray-300">
-                    {formattedTime}
+                  <div
+                    className={`${task.completed
+                        ? "text-green-600 font-semibold"
+                        : formattedTime === "waktu habis"
+                          ? "text-red-600 font-semibold"
+                          : ""
+                      }`}
+                  >
+                    {task.completed ? "selesai" : 'formatTimeRemaining'}
                   </div>
+
 
                   <div className="hidden sm:flex col-span-2 justify-end gap-3">
                     <button
