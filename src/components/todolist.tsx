@@ -325,7 +325,7 @@ export default function TodoList() {
                       onClick={() => editTask(task)}
                       className="cursor-pointer text-indigo-400 hover:text-indigo-300 text-sm"
                     >
-                      Edit
+                      Edit🚗
                     </button>
                     <button
                       onClick={() => deleteTask(task.id)}
