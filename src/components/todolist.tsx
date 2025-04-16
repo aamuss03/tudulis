@@ -79,8 +79,12 @@ export default function TodoList() {
       confirmButtonText: "Tambah",
       cancelButtonText: "Batal",
       preConfirm: () => {
-        const text = (document.getElementById("swal-input1") as HTMLInputElement)?.value.trim();
-        const deadline = (document.getElementById("swal-input2") as HTMLInputElement)?.value;
+        const text = (
+          document.getElementById("swal-input1") as HTMLInputElement
+        )?.value.trim();
+        const deadline = (
+          document.getElementById("swal-input2") as HTMLInputElement
+        )?.value;
         if (!text || !deadline) {
           Swal.showValidationMessage("Semua kolom harus diisi!");
           return;
@@ -98,6 +102,13 @@ export default function TodoList() {
       try {
         const docRef = await addDoc(collection(db, "tasks"), newTask);
         setTasks((prevTasks) => [...prevTasks, { id: docRef.id, ...newTask }]);
+        await Swal.fire({
+          icon: "success",
+          title: "Berhasil!",
+          text: "Kegiatan berhasil ditambahkan.",
+          timer: 1500,
+          showConfirmButton: false,
+        });
       } catch (error) {
         console.error("Error adding task:", error);
       }
@@ -115,8 +126,12 @@ export default function TodoList() {
       confirmButtonText: "Simpan",
       cancelButtonText: "Batal",
       preConfirm: () => {
-        const text = (document.getElementById("swal-input1") as HTMLInputElement)?.value.trim();
-        const deadline = (document.getElementById("swal-input2") as HTMLInputElement)?.value;
+        const text = (
+          document.getElementById("swal-input1") as HTMLInputElement
+        )?.value.trim();
+        const deadline = (
+          document.getElementById("swal-input2") as HTMLInputElement
+        )?.value;
         if (!text || !deadline) {
           Swal.showValidationMessage("Semua kolom harus diisi!");
           return;
@@ -134,9 +149,18 @@ export default function TodoList() {
         });
         setTasks((prevTasks) =>
           prevTasks.map((t) =>
-            t.id === task.id ? { ...t, text: formValues[0], deadline: formValues[1] } : t
+            t.id === task.id
+              ? { ...t, text: formValues[0], deadline: formValues[1] }
+              : t
           )
         );
+        await Swal.fire({
+          icon: "success",
+          title: "Berhasil!",
+          text: "Kegiatan berhasil diubah.",
+          timer: 1500,
+          showConfirmButton: false,
+        });
       } catch (error) {
         console.error("Error updating task:", error);
       }
@@ -157,6 +181,13 @@ export default function TodoList() {
       try {
         await deleteDoc(doc(db, "tasks", id));
         setTasks((prevTasks) => prevTasks.filter((task) => task.id !== id));
+        await Swal.fire({
+          icon: "success",
+          title: "Berhasil!",
+          text: "Kegiatan berhasil dihapus.",
+          timer: 1500,
+          showConfirmButton: false,
+        });
       } catch (error) {
         console.error("Error deleting task:", error);
       }
@@ -178,7 +209,9 @@ export default function TodoList() {
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-3xl bg-gray-800 rounded-2xl shadow-xl p-8">
-        <h1 className="text-3xl sm:text-4xl font-bold text-center mb-10 text-white">📝 To Do List</h1>
+        <h1 className="text-3xl sm:text-4xl font-bold text-center mb-10 text-white">
+          📝 To Do List
+        </h1>
 
         <div className="flex justify-center mb-8">
           <button
@@ -205,8 +238,8 @@ export default function TodoList() {
               const rowColor = task.completed
                 ? "bg-green-700/20 border-green-500"
                 : isExpired
-                  ? "bg-red-700/20 border-red-500"
-                  : "bg-yellow-600/20 border-yellow-500";
+                ? "bg-red-700/20 border-red-500"
+                : "bg-yellow-600/20 border-yellow-500";
 
               return (
                 <motion.li
@@ -235,12 +268,21 @@ export default function TodoList() {
                         onChange={() => toggleComplete(task.id)}
                         className="h-5 w-5 mt-1"
                       />
-                      <span className={`break-words ${task.completed ? "line-through text-gray-500" : "text-gray-100"}`}>
+                      <span
+                        className={`break-words ${
+                          task.completed
+                            ? "line-through text-gray-500"
+                            : "text-gray-100"
+                        }`}
+                      >
                         {task.text}
                       </span>
                     </div>
                     <div className="text-sm">
-                      <span className="block">Deadline: {new Date(task.deadline).toLocaleDateString("id-ID")}</span>
+                      <span className="block">
+                        Deadline:{" "}
+                        {new Date(task.deadline).toLocaleDateString("id-ID")}
+                      </span>
                       <span className="block">Sisa Waktu: {formattedTime}</span>
                     </div>
                     <button
@@ -259,7 +301,13 @@ export default function TodoList() {
                       onChange={() => toggleComplete(task.id)}
                       className="h-5 w-5 mt-1"
                     />
-                    <span className={`break-words ${task.completed ? "line-through text-gray-500" : "text-gray-100"}`}>
+                    <span
+                      className={`break-words ${
+                        task.completed
+                          ? "line-through text-gray-500"
+                          : "text-gray-100"
+                      }`}
+                    >
                       {task.text}
                     </span>
                   </div>
