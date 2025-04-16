@@ -1,4 +1,3 @@
-
 "use client";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { db } from "../app/lib/firebase";
@@ -71,8 +70,7 @@ export default function TodoList() {
     } else if (sortOption === "time-asc") {
       sorted.sort(
         (a, b) =>
-          calculateTimeRemaining(a.deadline) -
-          calculateTimeRemaining(b.deadline)
+          calculateTimeRemaining(a.deadline) - calculateTimeRemaining(b.deadline)
       );
     }
     return sorted;
@@ -241,7 +239,6 @@ export default function TodoList() {
           </select>
         </div>
 
-        {/* Desktop Header */}
         <div className="hidden sm:grid grid-cols-12 gap-4 font-semibold text-gray-400 mb-4 px-6 text-sm">
           <div className="col-span-6 text-left">Kegiatan</div>
           <div className="col-span-2 text-center">Deadline</div>
@@ -257,8 +254,8 @@ export default function TodoList() {
               const rowColor = task.completed
                 ? "bg-green-700/20 border-green-500"
                 : isExpired
-                  ? "bg-red-700/20 border-red-500"
-                  : "bg-yellow-600/20 border-yellow-500";
+                ? "bg-red-700/20 border-red-500"
+                : "bg-yellow-600/20 border-yellow-500";
 
               return (
                 <motion.li
@@ -269,6 +266,7 @@ export default function TodoList() {
                   transition={{ duration: 0.3 }}
                   className={`px-6 py-4 border rounded-xl ${rowColor} flex flex-col sm:grid sm:grid-cols-12 gap-2 sm:gap-4`}
                 >
+                  {/* Mobile View */}
                   <div className="sm:hidden space-y-1">
                     <div className="flex justify-between">
                       <span className="text-sm font-semibold">Kegiatan</span>
@@ -286,23 +284,13 @@ export default function TodoList() {
                         onChange={() => toggleComplete(task.id)}
                         className="h-5 w-5 mt-1"
                       />
-                      <span
-                        className={`break-words ${task.completed
-                            ? "line-through text-gray-500"
-                            : "text-gray-100"
-                          }`}
-                      >
+                      <span className={`break-words ${task.completed ? "line-through text-gray-500" : "text-gray-100"}`}>
                         {task.text}
                       </span>
                     </div>
                     <div className="text-sm">
-                      <span className="block">
-                        Deadline:{" "}
-                        {new Date(task.deadline).toLocaleDateString("id-ID")}
-                      </span>
-                      <span className="block">
-                        Sisa Waktu: {formattedTime}
-                      </span>
+                      <span className="block">Deadline: {new Date(task.deadline).toLocaleDateString("id-ID")}</span>
+                      <span className="block">Sisa Waktu: {formattedTime}</span>
                     </div>
                     <button
                       onClick={() => editTask(task)}
@@ -312,6 +300,7 @@ export default function TodoList() {
                     </button>
                   </div>
 
+                  {/* Desktop View */}
                   <div className="hidden sm:flex col-span-6 items-start gap-3">
                     <input
                       type="checkbox"
@@ -319,12 +308,7 @@ export default function TodoList() {
                       onChange={() => toggleComplete(task.id)}
                       className="h-5 w-5 mt-1"
                     />
-                    <span
-                      className={`break-words ${task.completed
-                          ? "line-through text-gray-500"
-                          : "text-gray-100"
-                        }`}
-                    >
+                    <span className={`break-words ${task.completed ? "line-through text-gray-500" : "text-gray-100"}`}>
                       {task.text}
                     </span>
                   </div>
@@ -334,16 +318,15 @@ export default function TodoList() {
                   </div>
 
                   <div
-                    className={`${task.completed
-                        ? "text-green-600 font-semibold"
-                        : formattedTime === "waktu habis"
-                          ? "text-red-600 font-semibold"
-                          : ""
-                      }`}
+                    className={`col-span-2 text-center text-sm ${task.completed
+                      ? "text-green-600 font-semibold"
+                      : isExpired
+                      ? "text-red-600 font-semibold"
+                      : "text-yellow-300"
+                    }`}
                   >
-                    {task.completed ? "selesai" : 'formatTimeRemaining'}
+                    {task.completed ? "Selesai" : formattedTime}
                   </div>
-
 
                   <div className="hidden sm:flex col-span-2 justify-end gap-3">
                     <button
