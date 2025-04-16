@@ -21,6 +21,7 @@ type Task = {
 
 export default function TodoList() {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [sortOption, setSortOption] = useState<"deadline" | "alphabetical">("deadline");
   const [, setTime] = useState(Date.now());
 
   useEffect(() => {
@@ -61,12 +62,19 @@ export default function TodoList() {
   };
 
   const sortedTasks = useMemo(() => {
-    return [...tasks].sort((a, b) => {
-      const aRemaining = calculateTimeRemaining(a.deadline);
-      const bRemaining = calculateTimeRemaining(b.deadline);
-      return aRemaining - bRemaining;
-    });
-  }, [tasks, calculateTimeRemaining]);
+    const sorted = [...tasks];
+    switch (sortOption) {
+      case "alphabetical":
+        return sorted.sort((a, b) => a.text.localeCompare(b.text));
+      case "deadline":
+      default:
+        return sorted.sort((a, b) => {
+          const aRemaining = calculateTimeRemaining(a.deadline);
+          const bRemaining = calculateTimeRemaining(b.deadline);
+          return aRemaining - bRemaining;
+        });
+    }
+  }, [tasks, sortOption, calculateTimeRemaining]);
 
   const addTask = async (): Promise<void> => {
     const { value: formValues } = await Swal.fire({
@@ -79,12 +87,8 @@ export default function TodoList() {
       confirmButtonText: "Tambah",
       cancelButtonText: "Batal",
       preConfirm: () => {
-        const text = (
-          document.getElementById("swal-input1") as HTMLInputElement
-        )?.value.trim();
-        const deadline = (
-          document.getElementById("swal-input2") as HTMLInputElement
-        )?.value;
+        const text = (document.getElementById("swal-input1") as HTMLInputElement)?.value.trim();
+        const deadline = (document.getElementById("swal-input2") as HTMLInputElement)?.value;
         if (!text || !deadline) {
           Swal.showValidationMessage("Semua kolom harus diisi!");
           return;
@@ -126,12 +130,8 @@ export default function TodoList() {
       confirmButtonText: "Simpan",
       cancelButtonText: "Batal",
       preConfirm: () => {
-        const text = (
-          document.getElementById("swal-input1") as HTMLInputElement
-        )?.value.trim();
-        const deadline = (
-          document.getElementById("swal-input2") as HTMLInputElement
-        )?.value;
+        const text = (document.getElementById("swal-input1") as HTMLInputElement)?.value.trim();
+        const deadline = (document.getElementById("swal-input2") as HTMLInputElement)?.value;
         if (!text || !deadline) {
           Swal.showValidationMessage("Semua kolom harus diisi!");
           return;
@@ -149,9 +149,7 @@ export default function TodoList() {
         });
         setTasks((prevTasks) =>
           prevTasks.map((t) =>
-            t.id === task.id
-              ? { ...t, text: formValues[0], deadline: formValues[1] }
-              : t
+            t.id === task.id ? { ...t, text: formValues[0], deadline: formValues[1] } : t
           )
         );
         await Swal.fire({
@@ -213,16 +211,27 @@ export default function TodoList() {
           📝 To Do List
         </h1>
 
-        <div className="flex justify-center mb-8">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 gap-4">
           <button
             onClick={addTask}
             className="cursor-pointer bg-indigo-500 hover:bg-indigo-600 text-white px-6 py-2 rounded-lg transition-all duration-200"
           >
             ➕ Tambah Kegiatan
           </button>
+
+          <select
+            value={sortOption}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+              setSortOption(e.target.value as "deadline" | "alphabetical")
+            }
+            className="bg-gray-700 text-gray-100 px-4 py-2 rounded-md"
+          >
+            <option value="deadline">⏳ Deadline</option>
+            <option value="alphabetical">🔤 A-Z</option>
+          </select>
+
         </div>
 
-        {/* Desktop Layout */}
         <div className="hidden sm:grid grid-cols-12 gap-4 font-semibold text-gray-400 mb-4 px-6 text-sm">
           <div className="col-span-6 text-left">Kegiatan</div>
           <div className="col-span-2 text-center">Deadline</div>
@@ -238,8 +247,8 @@ export default function TodoList() {
               const rowColor = task.completed
                 ? "bg-green-700/20 border-green-500"
                 : isExpired
-                ? "bg-red-700/20 border-red-500"
-                : "bg-yellow-600/20 border-yellow-500";
+                  ? "bg-red-700/20 border-red-500"
+                  : "bg-yellow-600/20 border-yellow-500";
 
               return (
                 <motion.li
@@ -250,7 +259,6 @@ export default function TodoList() {
                   transition={{ duration: 0.3 }}
                   className={`px-6 py-4 border rounded-xl ${rowColor} flex flex-col sm:grid sm:grid-cols-12 gap-2 sm:gap-4`}
                 >
-                  {/* Mobile layout */}
                   <div className="sm:hidden space-y-1">
                     <div className="flex justify-between">
                       <span className="text-sm font-semibold">Kegiatan</span>
@@ -269,19 +277,17 @@ export default function TodoList() {
                         className="h-5 w-5 mt-1"
                       />
                       <span
-                        className={`break-words ${
-                          task.completed
+                        className={`break-words ${task.completed
                             ? "line-through text-gray-500"
                             : "text-gray-100"
-                        }`}
+                          }`}
                       >
                         {task.text}
                       </span>
                     </div>
                     <div className="text-sm">
                       <span className="block">
-                        Deadline:{" "}
-                        {new Date(task.deadline).toLocaleDateString("id-ID")}
+                        Deadline: {new Date(task.deadline).toLocaleDateString("id-ID")}
                       </span>
                       <span className="block">Sisa Waktu: {formattedTime}</span>
                     </div>
@@ -293,7 +299,6 @@ export default function TodoList() {
                     </button>
                   </div>
 
-                  {/* Desktop layout */}
                   <div className="hidden sm:flex col-span-6 items-start gap-3">
                     <input
                       type="checkbox"
@@ -302,11 +307,10 @@ export default function TodoList() {
                       className="h-5 w-5 mt-1"
                     />
                     <span
-                      className={`break-words ${
-                        task.completed
+                      className={`break-words ${task.completed
                           ? "line-through text-gray-500"
                           : "text-gray-100"
-                      }`}
+                        }`}
                     >
                       {task.text}
                     </span>
