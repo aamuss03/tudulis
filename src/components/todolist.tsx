@@ -78,9 +78,9 @@ export default function TodoList() {
 
   const addTask = async (): Promise<void> => {
     const { value: formValues } = await Swal.fire({
-      title: "Tambah Kegiatan",
+      title: "Tambah Tugas",
       html:
-        '<input id="swal-input1" class="swal2-input" placeholder="Nama kegiatan">' +
+        '<input id="swal-input1" class="swal2-input" placeholder="Nama Tugas">' +
         '<input id="swal-input2" type="datetime-local" class="swal2-input">',
       focusConfirm: false,
       showCancelButton: true,
@@ -113,7 +113,7 @@ export default function TodoList() {
         await Swal.fire({
           icon: "success",
           title: "Berhasil!",
-          text: "Kegiatan berhasil ditambahkan.",
+          text: "Tugas berhasil ditambahkan.",
           timer: 1500,
           showConfirmButton: false,
         });
@@ -125,9 +125,9 @@ export default function TodoList() {
 
   const editTask = async (task: Task) => {
     const { value: formValues } = await Swal.fire({
-      title: "Edit Kegiatan",
+      title: "Edit Tugas",
       html:
-        `<input id="swal-input1" class="swal2-input" value="${task.text}" placeholder="Nama kegiatan">` +
+        `<input id="swal-input1" class="swal2-input" value="${task.text}" placeholder="Nama Tugas">` +
         `<input id="swal-input2" type="datetime-local" class="swal2-input" value="${task.deadline}">`,
       focusConfirm: false,
       showCancelButton: true,
@@ -165,7 +165,7 @@ export default function TodoList() {
         await Swal.fire({
           icon: "success",
           title: "Berhasil!",
-          text: "Kegiatan berhasil diubah.",
+          text: "Tugas berhasil diubah.",
           timer: 1500,
           showConfirmButton: false,
         });
@@ -192,7 +192,7 @@ export default function TodoList() {
         await Swal.fire({
           icon: "success",
           title: "Berhasil!",
-          text: "Kegiatan berhasil dihapus.",
+          text: "Tugas berhasil dihapus.",
           timer: 1500,
           showConfirmButton: false,
         });
@@ -226,7 +226,7 @@ export default function TodoList() {
             onClick={addTask}
             className="cursor-pointer bg-indigo-500 hover:bg-indigo-600 text-white px-6 py-2 rounded-lg transition-all duration-200"
           >
-            ➕ Tambah Kegiatan
+            ➕ Tambah Tugas
           </button>
 
           <select
@@ -240,7 +240,7 @@ export default function TodoList() {
         </div>
 
         <div className="hidden sm:grid grid-cols-12 gap-4 font-semibold text-gray-400 mb-4 px-6 text-sm">
-          <div className="col-span-6 text-left">Kegiatan</div>
+          <div className="col-span-6 text-left">Tugas</div>
           <div className="col-span-2 text-center">Deadline</div>
           <div className="col-span-2 text-center">Sisa Waktu</div>
         </div>
@@ -269,7 +269,7 @@ export default function TodoList() {
                   {/* Mobile View */}
                   <div className="sm:hidden space-y-1">
                     <div className="flex justify-between">
-                      <span className="text-sm font-semibold">Kegiatan</span>
+                      <span className="text-sm font-semibold">Tugas</span>
                       <button
                         onClick={() => deleteTask(task.id)}
                         className="text-red-400 hover:text-red-300 text-sm"
