@@ -183,7 +183,7 @@ export default function TodoList() {
         <div className="flex justify-center mb-8">
           <button
             onClick={addTask}
-            className="bg-indigo-500 hover:bg-indigo-600 text-white px-6 py-2 rounded-lg transition-all duration-200"
+            className="cursor-pointer bg-indigo-500 hover:bg-indigo-600 text-white px-6 py-2 rounded-lg transition-all duration-200"
           >
             ➕ Tambah Kegiatan
           </button>
@@ -275,13 +275,13 @@ export default function TodoList() {
                   <div className="hidden sm:flex col-span-2 justify-end gap-3">
                     <button
                       onClick={() => editTask(task)}
-                      className="text-indigo-400 hover:text-indigo-300 text-sm"
+                      className="cursor-pointer text-indigo-400 hover:text-indigo-300 text-sm"
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => deleteTask(task.id)}
-                      className="text-red-400 hover:text-red-300 text-sm"
+                      className="cursor-pointer text-red-400 hover:text-red-300 text-sm"
                     >
                       Hapus
                     </button>
