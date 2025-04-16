@@ -81,12 +81,10 @@ export default function TodoList() {
       preConfirm: () => {
         const text = (document.getElementById("swal-input1") as HTMLInputElement)?.value.trim();
         const deadline = (document.getElementById("swal-input2") as HTMLInputElement)?.value;
-  
         if (!text || !deadline) {
           Swal.showValidationMessage("Semua kolom harus diisi!");
           return;
         }
-  
         return [text, deadline];
       },
     });
@@ -119,12 +117,10 @@ export default function TodoList() {
       preConfirm: () => {
         const text = (document.getElementById("swal-input1") as HTMLInputElement)?.value.trim();
         const deadline = (document.getElementById("swal-input2") as HTMLInputElement)?.value;
-  
         if (!text || !deadline) {
           Swal.showValidationMessage("Semua kolom harus diisi!");
           return;
         }
-  
         return [text, deadline];
       },
     });
@@ -180,93 +176,122 @@ export default function TodoList() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto mt-10 p-4 text-gray-900">
-      <h1 className="text-3xl font-semibold text-center text-white mb-8 tracking-wide">📝 To Do List</h1>
-  
-      <div className="flex justify-center mb-6">
-        <button
-          onClick={addTask}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-full font-medium transition-colors shadow-md"
-        >
-          ➕ Tambah Kegiatan
-        </button>
+    <div className="min-h-screen bg-gray-900 text-gray-100 flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-3xl bg-gray-800 rounded-2xl shadow-xl p-8">
+        <h1 className="text-3xl sm:text-4xl font-bold text-center mb-10 text-white">📝 To Do List</h1>
+
+        <div className="flex justify-center mb-8">
+          <button
+            onClick={addTask}
+            className="bg-indigo-500 hover:bg-indigo-600 text-white px-6 py-2 rounded-lg transition-all duration-200"
+          >
+            ➕ Tambah Kegiatan
+          </button>
+        </div>
+
+        {/* Desktop Layout */}
+        <div className="hidden sm:grid grid-cols-12 gap-4 font-semibold text-gray-400 mb-4 px-6 text-sm">
+          <div className="col-span-6 text-left">Kegiatan</div>
+          <div className="col-span-2 text-center">Deadline</div>
+          <div className="col-span-2 text-center">Sisa Waktu</div>
+        </div>
+
+        <ul className="space-y-4">
+          <AnimatePresence>
+            {sortedTasks.map((task) => {
+              const timeLeft = calculateTimeRemaining(task.deadline);
+              const formattedTime = formatTimeRemaining(timeLeft);
+              const isExpired = formattedTime === "Waktu habis!";
+              const rowColor = task.completed
+                ? "bg-green-700/20 border-green-500"
+                : isExpired
+                  ? "bg-red-700/20 border-red-500"
+                  : "bg-yellow-600/20 border-yellow-500";
+
+              return (
+                <motion.li
+                  key={task.id}
+                  initial={{ opacity: 0, y: -5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.3 }}
+                  className={`px-6 py-4 border rounded-xl ${rowColor} flex flex-col sm:grid sm:grid-cols-12 gap-2 sm:gap-4`}
+                >
+                  {/* Mobile layout */}
+                  <div className="sm:hidden space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-sm font-semibold">Kegiatan</span>
+                      <button
+                        onClick={() => deleteTask(task.id)}
+                        className="text-red-400 hover:text-red-300 text-sm"
+                      >
+                        Hapus
+                      </button>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <input
+                        type="checkbox"
+                        checked={task.completed}
+                        onChange={() => toggleComplete(task.id)}
+                        className="h-5 w-5 mt-1"
+                      />
+                      <span className={`break-words ${task.completed ? "line-through text-gray-500" : "text-gray-100"}`}>
+                        {task.text}
+                      </span>
+                    </div>
+                    <div className="text-sm">
+                      <span className="block">Deadline: {new Date(task.deadline).toLocaleDateString("id-ID")}</span>
+                      <span className="block">Sisa Waktu: {formattedTime}</span>
+                    </div>
+                    <button
+                      onClick={() => editTask(task)}
+                      className="text-indigo-400 hover:text-indigo-300 text-sm mt-1"
+                    >
+                      Edit
+                    </button>
+                  </div>
+
+                  {/* Desktop layout */}
+                  <div className="hidden sm:flex col-span-6 items-start gap-3">
+                    <input
+                      type="checkbox"
+                      checked={task.completed}
+                      onChange={() => toggleComplete(task.id)}
+                      className="h-5 w-5 mt-1"
+                    />
+                    <span className={`break-words ${task.completed ? "line-through text-gray-500" : "text-gray-100"}`}>
+                      {task.text}
+                    </span>
+                  </div>
+
+                  <div className="hidden sm:block col-span-2 text-center text-sm text-gray-300">
+                    {new Date(task.deadline).toLocaleDateString("id-ID")}
+                  </div>
+
+                  <div className="hidden sm:block col-span-2 text-center text-sm text-gray-300">
+                    {formattedTime}
+                  </div>
+
+                  <div className="hidden sm:flex col-span-2 justify-end gap-3">
+                    <button
+                      onClick={() => editTask(task)}
+                      className="text-indigo-400 hover:text-indigo-300 text-sm"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => deleteTask(task.id)}
+                      className="text-red-400 hover:text-red-300 text-sm"
+                    >
+                      Hapus
+                    </button>
+                  </div>
+                </motion.li>
+              );
+            })}
+          </AnimatePresence>
+        </ul>
       </div>
-  
-      <div className="hidden sm:grid grid-cols-5 gap-4 font-medium text-center text-gray-600 mb-4 px-6">
-        <div>Kegiatan</div>
-        <div>Deadline</div>
-        <div>Sisa Waktu</div>
-      </div>
-  
-      <ul className="space-y-3">
-        <AnimatePresence>
-          {sortedTasks.map((task) => {
-            const timeLeft = calculateTimeRemaining(task.deadline);
-            const formattedTime = formatTimeRemaining(timeLeft);
-            const isExpired = formattedTime === "Waktu habis!";
-            const rowColor = task.completed
-              ? "bg-green-100"
-              : isExpired
-              ? "bg-red-100"
-              : "bg-yellow-100";
-  
-            return (
-              <motion.li
-                key={task.id}
-                initial={{ opacity: 0, y: -5 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
-                className={`grid grid-cols-1 sm:grid-cols-5 gap-2 sm:gap-4 items-center text-center px-4 sm:px-6 py-3 rounded-xl shadow-sm border ${rowColor}`}
-              >
-                <div className="flex items-center space-x-2 justify-start">
-                  <input
-                    type="checkbox"
-                    checked={task.completed}
-                    onChange={() => toggleComplete(task.id)}
-                    className="form-checkbox h-5 w-5 accent-indigo-600"
-                  />
-                  <span
-                    className={`truncate max-w-[180px] text-left ${
-                      task.completed ? "line-through text-gray-400" : "text-gray-800"
-                    }`}
-                    title={task.text}
-                  >
-                    {task.text}
-                  </span>
-                </div>
-  
-                <div className="text-gray-700 text-sm">
-                  {new Date(task.deadline).toLocaleDateString("id-ID")}
-                </div>
-  
-                <div className="flex items-center justify-center gap-1 text-gray-700 text-sm">
-                  <span>⏰</span>
-                  <span>{formattedTime}</span>
-                </div>
-  
-                <div className="text-right">
-                  <button
-                    onClick={() => editTask(task)}
-                    className="text-indigo-600 hover:underline text-sm"
-                  >
-                    Edit
-                  </button>
-                </div>
-  
-                <div className="text-left">
-                  <button
-                    onClick={() => deleteTask(task.id)}
-                    className="text-red-500 hover:underline text-sm"
-                  >
-                    Hapus
-                  </button>
-                </div>
-              </motion.li>
-            );
-          })}
-        </AnimatePresence>
-      </ul>
     </div>
   );
 }
