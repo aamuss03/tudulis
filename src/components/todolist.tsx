@@ -266,7 +266,7 @@ export default function TodoList() {
                   transition={{ duration: 0.3 }}
                   className={`px-6 py-4 border rounded-xl ${rowColor} flex flex-col sm:grid sm:grid-cols-12 gap-2 sm:gap-4`}
                 >
-                  {/* Mobile View */}
+                  
                   <div className="sm:hidden space-y-1">
                     <div className="flex justify-between">
                       <span className="text-sm font-semibold">Tugas</span>
